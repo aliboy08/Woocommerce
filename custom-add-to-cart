@@ -1,0 +1,21 @@
+add_shortcode('ff_custom_add_to_cart', function($atts){
+	ob_start();
+	extract( shortcode_atts( array(
+		'id' => '',
+	), $atts));
+	echo '<div class="custom-add-to-cart">';
+		echo '<div class="qty-container">';
+			echo '<input type="number" class="input-text qty text" step="1" min="0" max="" name="quantity" value="1" title="Qty" size="4" pattern="[0-9]*" inputmode="numeric" aria-labelledby="">';
+		echo '</div>';
+		echo do_shortcode('[add_to_cart id="'. $id .'"]');
+	echo '</div>';
+	wc_enqueue_js( "
+	$('.custom-add-to-cart .add_to_cart_button').text('Purchase Now');
+	jQuery( '.custom-add-to-cart .qty' ).on( 'change', function() {
+		var qty = jQuery( this ),
+			atc = jQuery( '.custom-add-to-cart .qty' ).closest('.custom-add-to-cart').find('.add_to_cart_button');
+			atc.attr( 'data-quantity', qty.val() );
+	});	
+	");
+	return ob_get_clean();
+});
