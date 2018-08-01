@@ -1,0 +1,80 @@
+/*
+* Automatically adding the product to the cart.
+*/
+function ff_add_product_to_cart( $item_key, $product_id ) {
+
+	$product_cats_ids = wc_get_product_term_ids( $product_id, 'product_cat' );
+
+	$product_category_king_id 	= 43; // King category id
+	$product_category_queen_id 	= 45; // Queen category id
+	$product_category_double_id = 44; // Double category id
+
+	$custom_products_to_add = array(
+		array(
+			'product_category_id' => 43, // king
+			'free_product_id' => 7225,
+		),
+		array(
+			'product_category_id' => 45, // queen
+			'free_product_id' => 7239,
+		),
+		array(
+			'product_category_id' => 44, // double
+			'free_product_id' => 7241,
+		),
+	);
+
+	foreach( $custom_products_to_add as $custom_product ) {
+		if ( ! is_admin() && in_array( $custom_product['product_category_id'], $product_cats_ids ) ) {
+			$free_product_id = $custom_product['free_product_id'];  // Product Id of the free king product which will get added to cart
+			$found = false;
+			//check if product already in cart
+			if ( sizeof( WC()->cart->get_cart() ) > 0 ) {
+				foreach ( WC()->cart->get_cart() as $cart_item_key => $values ) {
+					$_product = $values['data'];
+					if ( $_product->get_id() == $free_product_id )
+					$found = true;
+				}
+				// if product not found, add it
+				if ( ! $found )
+					WC()->cart->add_to_cart($free_product_id);
+			} else {
+				// if no products in cart, add it
+				WC()->cart->add_to_cart($free_product_id);
+			}        
+	  	} 
+	}
+}
+add_action( 'woocommerce_add_to_cart', 'ff_add_product_to_cart', 10, 2 );
+
+function ff_cart_updated( $cart_item_key, $cart ) {
+	$custom_products_to_remove = array(
+		array(
+			'product_category_id' => 43, // king
+			'free_product_id' => 7225,
+		),
+		array(
+			'product_category_id' => 45, // queen
+			'free_product_id' => 7239,
+		),
+		array(
+			'product_category_id' => 44, // double
+			'free_product_id' => 7241,
+		),
+	);
+
+	$product_id = $cart->cart_contents[ $cart_item_key ]['product_id'];
+	$product_cats_ids = wc_get_product_term_ids( $product_id, 'product_cat' );
+
+	foreach( $custom_products_to_remove as $remove_product ) {
+		if ( ! is_admin() && in_array( $remove_product['product_category_id'], $product_cats_ids ) ) {
+			global $woocommerce;
+			foreach( $woocommerce->cart->get_cart() as $item ) {
+				if( $item['product_id'] == $remove_product['free_product_id'] ) {
+					$woocommerce->cart->remove_cart_item($item['key']); // remove free product
+				}
+			}
+		}
+	}
+};
+add_action( 'woocommerce_remove_cart_item', 'ff_cart_updated', 10, 2 );
